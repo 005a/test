@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:test/logic/taskManager.dart';
 import 'package:test/screens/Dashboard.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
+  await Hive.openBox('tasks');
+
   runApp(const MyApp());
 }
 
@@ -26,26 +30,36 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+@immutable
+class MyHomePage extends StatelessWidget {
+  final String title;
   const MyHomePage({super.key, required this.title});
 
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
+    final taskP = Provider.of<TaskProvider>(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(title),
       ),
       body: const Center(child: Dashboard()),
+      drawer: Drawer(
+          child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+                onPressed: () {
+                  taskP.exportCSV();
+                  Navigator.of(context).pop(true);
+                },
+                child: const Text('Export CSV'))
+          ],
+        ),
+      )),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Provider.of<TaskProvider>(context, listen: false).addCard();
+          taskP.addCard();
         },
         tooltip: 'Create',
         child: const Icon(Icons.add),

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:provider/provider.dart';
 import 'package:test/logic/taskManager.dart';
@@ -17,7 +18,9 @@ class Dashboard extends StatelessWidget {
       child: ListView(
           scrollDirection: Axis.horizontal,
           children: TaskStatus.values.map((element) {
-            return SizedBox(
+            return Container(
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey, width: 0.1)),
               height: MediaQuery.of(context).size.height,
               width: MediaQuery.of(context).size.width / 2.5,
               child: Column(
@@ -32,7 +35,7 @@ class Dashboard extends StatelessWidget {
                             padding: const EdgeInsets.all(5),
                             children: taskP.taskList.map((e) {
                               if (e.status.name == element.name) {
-                                Widget card = TaskCard(title: e.title);
+                                Widget card = TaskCard(card: e);
                                 return LongPressDraggable(
                                   data: e,
                                   feedback: card,
@@ -59,31 +62,46 @@ class Dashboard extends StatelessWidget {
 }
 
 class TaskCard extends StatelessWidget {
-  String title;
-  TaskCard({Key? key, required this.title}) : super(key: key);
+  CardModel card;
+  final TextEditingController _textEditingController = TextEditingController();
+  TaskCard({Key? key, required this.card}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final taskP = Provider.of<TaskProvider>(context);
+
     return SizedBox(
       height: 100,
       child: GestureDetector(
         onTap: () {
           showCupertinoDialog(
               context: context,
-              builder: (context) => CupertinoAlertDialog(
-                    title: Text(title),
-                    content: Text(title),
-                    actions: <Widget>[
-                      CupertinoDialogAction(
-                        child: Text('defaultActionText'),
-                        onPressed: () => Navigator.of(context).pop(true),
+              builder: (context) => Material(
+                    child: CupertinoAlertDialog(
+                      title: Text(card.title),
+                      content: TextField(
+                        controller: _textEditingController,
                       ),
-                    ],
+                      actions: <Widget>[
+                        CupertinoDialogAction(
+                          child: Text('cancel'),
+                          onPressed: () => Navigator.of(context).pop(true),
+                        ),
+                        CupertinoDialogAction(
+                          child: Text('ok'),
+                          onPressed: () {
+                            card.title = _textEditingController.text;
+                            taskP.editCard(card);
+                            Navigator.of(context).pop(true);
+                          },
+                        ),
+                      ],
+                    ),
                   ));
         },
         child: Card(
-          color: Colors.red,
-          child: Text(title),
+          color: Theme.of(context).cardColor,
+          child: Text(card.title),
         ),
       ),
     );
