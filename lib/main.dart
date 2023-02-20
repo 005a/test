@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:test/logic/init.dart';
 import 'package:test/logic/taskManager.dart';
 import 'package:test/screens/Dashboard.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:test/screens/components/DefaultDrawer.dart';
 
 void main() async {
-  await Hive.initFlutter();
-  await Hive.openBox('tasks');
+  await initHive();
 
   runApp(const MyApp());
 }
@@ -28,42 +28,46 @@ class MyApp extends StatelessWidget {
           home: const MyHomePage(title: 'Flutter Demo Home Page'),
         ));
   }
+
+  static void main() {}
 }
 
-@immutable
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   final String title;
   const MyHomePage({super.key, required this.title});
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      TaskProvider taskP = Provider.of<TaskProvider>(context, listen: false);
+      taskP.init();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final taskP = Provider.of<TaskProvider>(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: const Center(child: Dashboard()),
-      drawer: Drawer(
-          child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(
-                onPressed: () {
-                  taskP.exportCSV();
-                  Navigator.of(context).pop(true);
-                },
-                child: const Text('Export CSV'))
-          ],
-        ),
-      )),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          taskP.addCard();
-        },
-        tooltip: 'Create',
-        child: const Icon(Icons.add),
-      ),
+    return Consumer<TaskProvider>(
+      builder: (context, taskP, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.title),
+          ),
+          body: const Center(child: Dashboard()),
+          drawer: const DefaultDrawer(),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              taskP.addCard();
+            },
+            tooltip: 'Create',
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }
